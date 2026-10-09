@@ -4,6 +4,8 @@ import com.motionforge.app.data.HistoryManager
 import com.motionforge.app.engine.ExpressionEngine
 import com.motionforge.app.engine.TransformationEngine
 import com.motionforge.app.model.*
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -91,9 +93,51 @@ class MotionForgeTest {
             compositionHeight = 1080
         )
 
-        // Child local position (20, 10) scaled by 2 => (40, 20), plus parent (100, 50) => (140, 70)
         assertEquals(140f, evaluated.x, 0.01f)
         assertEquals(70f, evaluated.y, 0.01f)
         assertEquals(2f, evaluated.scaleX, 0.01f)
+    }
+
+    @Test
+    fun testProjectSerialization() {
+        val json = Json {
+            prettyPrint = true
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+            classDiscriminator = "_effectClass"
+        }
+
+        val testProject = Project(
+            id = "test-proj",
+            name = "Test Project",
+            layers = listOf(
+                Layer(
+                    id = "layer-1",
+                    name = "Shape Layer",
+                    type = LayerType.SHAPE,
+                    effects = listOf(
+                        LayerEffect.ChromaKey(),
+                        LayerEffect.ColorGrading(),
+                        LayerEffect.Glow(),
+                        LayerEffect.Blur(),
+                        LayerEffect.Shake(),
+                        LayerEffect.RgbSplit(),
+                        LayerEffect.Particles(),
+                        LayerEffect.MotionBlur(),
+                        LayerEffect.Transition()
+                    )
+                )
+            )
+        )
+
+        val encoded = json.encodeToString(testProject)
+        assertNotNull(encoded)
+        assertTrue(encoded.contains("ChromaKey"))
+
+        val decoded = json.decodeFromString<Project>(encoded)
+        assertEquals("test-proj", decoded.id)
+        assertEquals(1, decoded.layers.size)
+        assertEquals(9, decoded.layers[0].effects.size)
+        assertTrue(decoded.layers[0].effects[0] is LayerEffect.ChromaKey)
     }
 }

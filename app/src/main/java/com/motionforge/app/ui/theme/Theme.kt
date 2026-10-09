@@ -32,13 +32,17 @@ fun MotionForgeTheme(content: @Composable () -> Unit) {
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            val window = (view.context as? Activity)?.window
-            if (window != null) {
-                window.statusBarColor = BgDark.toArgb()
-                window.navigationBarColor = BgDark.toArgb()
-                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
-                WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = false
-            }
+            try {
+                val window = (view.context as? Activity)?.window
+                if (window != null) {
+                    window.statusBarColor = BgDark.toArgb()
+                    window.navigationBarColor = BgDark.toArgb()
+                    WindowCompat.getInsetsController(window, window.decorView).apply {
+                        isAppearanceLightStatusBars = false
+                        isAppearanceLightNavigationBars = false
+                    }
+                }
+            } catch (_: Exception) {}
         }
     }
 

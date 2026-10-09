@@ -1,5 +1,6 @@
 package com.motionforge.app.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
@@ -53,14 +54,15 @@ sealed class LayerEffect {
     abstract val id: String
     abstract val name: String
     abstract val isEnabled: Boolean
-    abstract val type: EffectType
+    abstract val effectType: EffectType
 
     @Serializable
+    @SerialName("ChromaKey")
     data class ChromaKey(
         override val id: String = UUID.randomUUID().toString(),
         override val name: String = "Chroma Key",
         override val isEnabled: Boolean = true,
-        override val type: EffectType = EffectType.CHROMA_KEY,
+        override val effectType: EffectType = EffectType.CHROMA_KEY,
         val keyColorHex: String = "#00FF00",
         val tolerance: Float = 0.35f,
         val smoothness: Float = 0.15f,
@@ -68,11 +70,12 @@ sealed class LayerEffect {
     ) : LayerEffect()
 
     @Serializable
+    @SerialName("ColorGrading")
     data class ColorGrading(
         override val id: String = UUID.randomUUID().toString(),
         override val name: String = "Color Grading",
         override val isEnabled: Boolean = true,
-        override val type: EffectType = EffectType.COLOR_GRADING,
+        override val effectType: EffectType = EffectType.COLOR_GRADING,
         val exposure: Float = 0f,       // -1.0 to 1.0
         val contrast: Float = 1.0f,     // 0.0 to 2.0
         val saturation: Float = 1.0f,   // 0.0 to 2.0
@@ -83,11 +86,12 @@ sealed class LayerEffect {
     ) : LayerEffect()
 
     @Serializable
+    @SerialName("Glow")
     data class Glow(
         override val id: String = UUID.randomUUID().toString(),
         override val name: String = "Glow",
         override val isEnabled: Boolean = true,
-        override val type: EffectType = EffectType.GLOW,
+        override val effectType: EffectType = EffectType.GLOW,
         val radius: Float = 25f,
         val intensity: Float = 1.2f,
         val threshold: Float = 0.5f,
@@ -95,22 +99,24 @@ sealed class LayerEffect {
     ) : LayerEffect()
 
     @Serializable
+    @SerialName("Blur")
     data class Blur(
         override val id: String = UUID.randomUUID().toString(),
         override val name: String = "Blur",
         override val isEnabled: Boolean = true,
-        override val type: EffectType = EffectType.BLUR,
+        override val effectType: EffectType = EffectType.BLUR,
         val radius: Float = 15f,
         val blurType: BlurType = BlurType.GAUSSIAN,
         val angle: Float = 0f
     ) : LayerEffect()
 
     @Serializable
+    @SerialName("Shake")
     data class Shake(
         override val id: String = UUID.randomUUID().toString(),
         override val name: String = "Camera Shake",
         override val isEnabled: Boolean = true,
-        override val type: EffectType = EffectType.SHAKE,
+        override val effectType: EffectType = EffectType.SHAKE,
         val amplitudeX: Float = 18f,
         val amplitudeY: Float = 18f,
         val frequency: Float = 12f,
@@ -119,21 +125,23 @@ sealed class LayerEffect {
     ) : LayerEffect()
 
     @Serializable
+    @SerialName("RgbSplit")
     data class RgbSplit(
         override val id: String = UUID.randomUUID().toString(),
         override val name: String = "RGB Split (Chromatic)",
         override val isEnabled: Boolean = true,
-        override val type: EffectType = EffectType.RGB_SPLIT,
+        override val effectType: EffectType = EffectType.RGB_SPLIT,
         val amount: Float = 12f,
         val angle: Float = 0f
     ) : LayerEffect()
 
     @Serializable
+    @SerialName("Particles")
     data class Particles(
         override val id: String = UUID.randomUUID().toString(),
         override val name: String = "Particles Generator",
         override val isEnabled: Boolean = true,
-        override val type: EffectType = EffectType.PARTICLES,
+        override val effectType: EffectType = EffectType.PARTICLES,
         val particleType: ParticleType = ParticleType.SPARKS,
         val count: Int = 40,
         val speed: Float = 1.5f,
@@ -141,21 +149,23 @@ sealed class LayerEffect {
     ) : LayerEffect()
 
     @Serializable
+    @SerialName("MotionBlur")
     data class MotionBlur(
         override val id: String = UUID.randomUUID().toString(),
         override val name: String = "Motion Blur",
         override val isEnabled: Boolean = true,
-        override val type: EffectType = EffectType.MOTION_BLUR,
+        override val effectType: EffectType = EffectType.MOTION_BLUR,
         val samples: Int = 6,
         val shutterAngle: Float = 180f
     ) : LayerEffect()
 
     @Serializable
+    @SerialName("Transition")
     data class Transition(
         override val id: String = UUID.randomUUID().toString(),
         override val name: String = "Transition",
         override val isEnabled: Boolean = true,
-        override val type: EffectType = EffectType.TRANSITION,
+        override val effectType: EffectType = EffectType.TRANSITION,
         val transitionType: TransitionType = TransitionType.CROSS_DISSOLVE,
         val durationMs: Long = 600L,
         val isAtStart: Boolean = true

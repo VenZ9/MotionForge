@@ -15,34 +15,47 @@ class ProjectRepository(private val context: Context) {
         prettyPrint = true
         ignoreUnknownKeys = true
         encodeDefaults = true
+        classDiscriminator = "_effectClass"
     }
 
     private val projectsDir: File
         get() = File(context.filesDir, "projects").apply { if (!exists()) mkdirs() }
 
     suspend fun getAllProjects(): List<Project> = withContext(Dispatchers.IO) {
-        val files = projectsDir.listFiles { file -> file.extension == "json" } ?: return@withContext emptyList()
-        val projects = files.mapNotNull { file ->
-            try {
-                json.decodeFromString<Project>(file.readText())
-            } catch (_: Exception) {
-                null
-            }
-        }.sortedByDescending { it.updatedAt }
+        try {
+            val files = projectsDir.listFiles { file -> file.extension == "json" } ?: return@withContext createInitialDemos()
+            val projects = files.mapNotNull { file ->
+                try {
+                    json.decodeFromString<Project>(file.readText())
+                } catch (_: Exception) {
+                    null
+                }
+            }.sortedByDescending { it.updatedAt }
 
-        if (projects.isEmpty()) {
-            val defaultList = createDemoProjects()
-            defaultList.forEach { saveProject(it) }
-            defaultList
-        } else {
-            projects
+            if (projects.isEmpty()) {
+                createInitialDemos()
+            } else {
+                projects
+            }
+        } catch (_: Exception) {
+            createDemoProjects()
         }
     }
 
+    private suspend fun createInitialDemos(): List<Project> {
+        val defaultList = createDemoProjects()
+        defaultList.forEach { p ->
+            try {
+                saveProject(p)
+            } catch (_: Exception) {}
+        }
+        return defaultList
+    }
+
     suspend fun getProjectById(id: String): Project? = withContext(Dispatchers.IO) {
-        val file = File(projectsDir, "$id.json")
-        if (!file.exists()) return@withContext null
         try {
+            val file = File(projectsDir, "$id.json")
+            if (!file.exists()) return@withContext null
             json.decodeFromString<Project>(file.readText())
         } catch (_: Exception) {
             null
@@ -50,14 +63,20 @@ class ProjectRepository(private val context: Context) {
     }
 
     suspend fun saveProject(project: Project): Unit = withContext(Dispatchers.IO) {
-        val updated = project.copy(updatedAt = System.currentTimeMillis())
-        val file = File(projectsDir, "${project.id}.json")
-        file.writeText(json.encodeToString(updated))
+        try {
+            val updated = project.copy(updatedAt = System.currentTimeMillis())
+            val file = File(projectsDir, "${project.id}.json")
+            file.writeText(json.encodeToString(updated))
+        } catch (_: Exception) {}
     }
 
     suspend fun deleteProject(id: String): Boolean = withContext(Dispatchers.IO) {
-        val file = File(projectsDir, "$id.json")
-        file.delete()
+        try {
+            val file = File(projectsDir, "$id.json")
+            file.delete()
+        } catch (_: Exception) {
+            false
+        }
     }
 
     suspend fun duplicateProject(project: Project): Project = withContext(Dispatchers.IO) {
@@ -71,7 +90,7 @@ class ProjectRepository(private val context: Context) {
         dup
     }
 
-    private fun createDemoProjects(): List<Project> {
+    fun createDemoProjects(): List<Project> {
         val demo1 = Project(
             id = "demo-cyberpunk",
             name = "Cyberpunk Neon Intro",
@@ -81,7 +100,6 @@ class ProjectRepository(private val context: Context) {
             durationMs = 5000L,
             backgroundColorHex = "#07090E",
             layers = listOf(
-                // Layer 1: Ambient Star Particles
                 Layer(
                     id = "layer-bg-particles",
                     name = "Starfield Particles",
@@ -104,7 +122,6 @@ class ProjectRepository(private val context: Context) {
                         )
                     )
                 ),
-                // Layer 2: Glowing Hexagon Badge
                 Layer(
                     id = "layer-hex-badge",
                     name = "Neon Hexagon",
@@ -143,7 +160,6 @@ class ProjectRepository(private val context: Context) {
                         LayerEffect.Glow(radius = 35f, intensity = 1.5f, glowColorHex = "#00E5FF")
                     )
                 ),
-                // Layer 3: Main Animated Title
                 Layer(
                     id = "layer-title",
                     name = "MOTIONFORGE Title",
@@ -173,7 +189,6 @@ class ProjectRepository(private val context: Context) {
                         LayerEffect.Glow(radius = 20f, intensity = 1.2f, glowColorHex = "#7C4DFF")
                     )
                 ),
-                // Layer 4: Subtitle Text
                 Layer(
                     id = "layer-subtitle",
                     name = "Pro Compositor Subtitle",

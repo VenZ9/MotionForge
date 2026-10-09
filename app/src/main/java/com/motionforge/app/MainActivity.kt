@@ -13,7 +13,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.motionforge.app.data.ProjectRepository
 import com.motionforge.app.model.Project
 import com.motionforge.app.ui.dashboard.DashboardScreen
@@ -33,32 +32,40 @@ class MainActivity : ComponentActivity() {
         setContent {
             MotionForgeTheme {
                 val coroutineScope = rememberCoroutineScope()
-                var projects by remember { mutableStateOf<List<Project>>(emptyList()) }
+                var projects by remember { mutableStateOf<List<Project>>(repository.createDemoProjects()) }
                 var activeProjectId by remember { mutableStateOf<String?>(null) }
 
-                // Request Permissions
+                // Safe runtime permissions launcher
                 val permissionLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestMultiplePermissions()
                 ) { _ -> }
 
                 LaunchedEffect(Unit) {
-                    val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        arrayOf(
-                            Manifest.permission.READ_MEDIA_VIDEO,
-                            Manifest.permission.READ_MEDIA_IMAGES,
-                            Manifest.permission.READ_MEDIA_AUDIO
-                        )
-                    } else {
-                        arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
-                    }
-                    val missing = permissions.filter {
-                        ContextCompat.checkSelfPermission(this@MainActivity, it) != PackageManager.PERMISSION_GRANTED
-                    }
-                    if (missing.isNotEmpty()) {
-                        permissionLauncher.launch(missing.toTypedArray())
-                    }
+                    try {
+                        val loaded = repository.getAllProjects()
+                        if (loaded.isNotEmpty()) {
+                            projects = loaded
+                        }
+                    } catch (_: Exception) {}
 
-                    projects = repository.getAllProjects()
+                    // Request media permissions safely in background after UI is composed
+                    try {
+                        val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            arrayOf(
+                                Manifest.permission.READ_MEDIA_VIDEO,
+                                Manifest.permission.READ_MEDIA_IMAGES,
+                                Manifest.permission.READ_MEDIA_AUDIO
+                            )
+                        } else {
+                            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+                        }
+                        val missing = permissions.filter {
+                            ContextCompat.checkSelfPermission(this@MainActivity, it) != PackageManager.PERMISSION_GRANTED
+                        }
+                        if (missing.isNotEmpty()) {
+                            permissionLauncher.launch(missing.toTypedArray())
+                        }
+                    } catch (_: Exception) {}
                 }
 
                 Surface(
@@ -79,7 +86,9 @@ class MainActivity : ComponentActivity() {
                             onBackToDashboard = {
                                 activeProjectId = null
                                 coroutineScope.launch {
-                                    projects = repository.getAllProjects()
+                                    try {
+                                        projects = repository.getAllProjects()
+                                    } catch (_: Exception) {}
                                 }
                             }
                         )
@@ -89,21 +98,31 @@ class MainActivity : ComponentActivity() {
                             onOpenProject = { id -> activeProjectId = id },
                             onCreateProject = { newProj ->
                                 coroutineScope.launch {
-                                    repository.saveProject(newProj)
-                                    projects = repository.getAllProjects()
+                                    try {
+                                        repository.saveProject(newProj)
+                                        projects = repository.getAllProjects()
+                                    } catch (_: Exception) {
+                                        projects = projects + newProj
+                                    }
                                     activeProjectId = newProj.id
                                 }
                             },
                             onDuplicateProject = { proj ->
                                 coroutineScope.launch {
-                                    val dup = repository.duplicateProject(proj)
-                                    projects = repository.getAllProjects()
+                                    try {
+                                        val dup = repository.duplicateProject(proj)
+                                        projects = repository.getAllProjects()
+                                    } catch (_: Exception) {}
                                 }
                             },
                             onDeleteProject = { id ->
                                 coroutineScope.launch {
-                                    repository.deleteProject(id)
-                                    projects = repository.getAllProjects()
+                                    try {
+                                        repository.deleteProject(id)
+                                        projects = repository.getAllProjects()
+                                    } catch (_: Exception) {
+                                        projects = projects.filterNot { it.id == id }
+                                    }
                                 }
                             }
                         )
